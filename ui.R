@@ -1,17 +1,9 @@
-#-------------------------
-#-------SUBMITTED BY------
-#--------2018-CS-01-------
-#--------2018-CS-07-------
-#--------2018-CS-14-------
-
+## app.R ##
 library(shiny)
-library(randomForest)
-require(caTools)
-library(rpart.plot)
+library(shinydashboard)
+library(shinyTree)
 library(rpart)
-library(RWeka)
-library(partykit)
-
+library(party)
 
 data <- read.csv ("processed.cleveland.data",header=FALSE)
 
@@ -20,21 +12,21 @@ names(data) <- c("age", "sex", "cp", "trestbps", "choi", "fbs", "restecg", "thal
 data$num[data$num > 1] <- 1
 
 data <- transform(
-  data,
-  age=as.integer(age),
-  sex=as.factor(sex),
-  cp=as.factor(cp),
-  trestbps=as.integer(trestbps),
-  choi=as.integer(choi),
-  fbs=as.factor(fbs),
-  restecg=as.factor(restecg),
-  thalach=as.integer(thalach),
-  exang=as.factor(exang),
-  oldpeak=as.numeric(oldpeak),
-  slope=as.factor(slope),
-  ca=as.factor(ca),
-  thai=as.factor(thai),
-  num=as.factor(num)
+    data,
+    age=as.integer(age),
+    sex=as.factor(sex),
+    cp=as.factor(cp),
+    trestbps=as.integer(trestbps),
+    choi=as.integer(choi),
+    fbs=as.factor(fbs),
+    restecg=as.factor(restecg),
+    thalach=as.integer(thalach),
+    exang=as.factor(exang),
+    oldpeak=as.numeric(oldpeak),
+    slope=as.factor(slope),
+    ca=as.factor(ca),
+    thai=as.factor(thai),
+    num=as.factor(num)
 )
 
 data[ data == "?"] <- NA
@@ -74,33 +66,6 @@ Predict_Forest <- predict(Random_Forest, data)
 confusionMatrix <- table(data$num, Predict_Forest)
 
 accuracyRandForest <- sum(diag(confusionMatrix)) / sum(confusionMatrix)
-
-
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-
-  # Application title
-  titlePanel("Heart Disease Data (2018-CS-1, 2018-CS-7, 2018-CS-14)"),
-
-  # Sidebar with a slider input for number of bins
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("technique", "Technique:",
-                  c("Select technique","Decision Tree ID3" = 1,
-                    "Decision Tree C4.5" = 2,
-                    "Random Forest" = 3))
-    ),
-
-    # Show a plot of the generated distribution
-    mainPanel(
-      plotOutput("sick_plot"),
-      tableOutput("conmat"),
-      textOutput("accuracy")
-
-
-    )
-  )
-)
 
 ui<-dashboardPage(skin = "green",
                   dashboardHeader(title = "Heart Disease Data Visualization"),
@@ -174,48 +139,17 @@ ui<-dashboardPage(skin = "green",
                   )
 )
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
+    output$randomforest <- renderTable(cm)
+    output$id3 <- renderTable(id3cm)
+    output$c4table <- renderTable(c4cm)
 
-  chartName <- reactive({
-    if(input$technique == 1){
-      return(rpart.plot(sickid3, extra = 106))
-    }
-    else if(input$technique == 2){
-      return(plot(sickc45))
-    }
-    else if(input$technique == 3){
-      return(plot(Random_Forest))
-    }
-  })
+    output$randomforestgraph <- renderPlot(plot(rf))
+    output$rft <- renderPlot(plot(rFTree))
 
-  output$sick_plot <- renderPlot({chartName()})
+    output$id3graph <- renderPlot(rpart.plot(id3))
 
-  output$conmat <- renderTable({
-    if(input$technique == 1){
-      return(matrix_ID3)
-    }
-    else if(input$technique == 2){
-      return(matrix_C45)
-    }
-    else if(input$technique == 3){
-      return(confusionMatrix)
-    }
-  })
-
-  output$accuracy <- renderText({
-    if(input$technique == 1){
-      paste("The accuracy of Decision Tree ID3 is: ", accuracy_ID3)
-    }
-    else if(input$technique == 2){
-      paste("The accuracy of Decision Tree C4.5 is: ", accuracy_C45)
-    }
-    else if(input$technique == 3){
-      paste("The accuracy of Random Forest is: ", accuracyRandForest)
-    }
-  })
-
+    output$c4t <- renderPlot(plot(c4Tree))
 }
 
-# Run the application
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
